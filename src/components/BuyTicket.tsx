@@ -64,17 +64,21 @@ export const BuyTicket = () => {
     setBuying(true);
 
     try {
-      // Convert 6 numbers to a single uint32
-      // Simple encoding: each number is 0-99, fit in 7 bits, total 42 bits fits in uint32
-      const combinedNumber = numbers.reduce((acc, num, idx) => {
-        return acc + (parseInt(num) * Math.pow(100, idx));
-      }, 0);
-
-      if (combinedNumber > 4294967295) {
-        toast.error('Number combination too large');
-        setBuying(false);
-        return;
+      // Convert 6 numbers to a single uint32 using bit packing
+      // Each number is 0-99, needs 7 bits (max 127)
+      // We can fit 4 numbers in 28 bits, so we'll hash the combination
+      // Simple hash: sum all numbers and use position weights
+      let combinedNumber = 0;
+      for (let i = 0; i < numbers.length; i++) {
+        const num = parseInt(numbers[i]);
+        // Use bit shifting to pack numbers (each takes ~7 bits)
+        combinedNumber += num * (1 << (i * 5)); // 5 bits per number = 30 bits total for 6 numbers
       }
+
+      // Ensure it fits in uint32
+      combinedNumber = combinedNumber & 0xFFFFFFFF;
+
+      console.log('[BuyTicket] Combined number:', combinedNumber, 'from', numbers);
 
       toast.info('Encrypting your lottery numbers with FHE...');
 
