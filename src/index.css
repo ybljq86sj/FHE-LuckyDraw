@@ -1,0 +1,117 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Dark cyberpunk lottery theme - deep backgrounds with neon accents */
+    --background: 240 10% 8%;
+    --foreground: 240 5% 90%;
+
+    --card: 240 8% 12%;
+    --card-foreground: 240 5% 90%;
+
+    --popover: 240 8% 12%;
+    --popover-foreground: 240 5% 90%;
+
+    /* Neon cyan primary */
+    --primary: 180 100% 50%;
+    --primary-foreground: 240 10% 8%;
+
+    /* Deep purple secondary */
+    --secondary: 270 60% 25%;
+    --secondary-foreground: 240 5% 90%;
+
+    /* Muted dark with soft contrast */
+    --muted: 240 6% 18%;
+    --muted-foreground: 240 5% 65%;
+
+    /* Neon green accent */
+    --accent: 150 100% 45%;
+    --accent-foreground: 240 10% 8%;
+
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 240 5% 90%;
+
+    --border: 240 8% 20%;
+    --input: 240 8% 15%;
+    --ring: 180 100% 50%;
+
+    --radius: 0.75rem;
+
+    /* Custom tokens for FHE lottery theme */
+    --neon-glow: 180 100% 50%;
+    --neon-purple: 270 100% 60%;
+    --encrypted: 150 100% 45%;
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(240 10% 8%), hsl(270 40% 12%));
+    --gradient-card: linear-gradient(180deg, hsl(240 8% 12%), hsl(240 8% 10%));
+    --gradient-neon: linear-gradient(90deg, hsl(180 100% 50%), hsl(270 100% 60%));
+    
+    /* Glows and shadows */
+    --shadow-neon: 0 0 20px hsl(180 100% 50% / 0.3), 0 0 40px hsl(180 100% 50% / 0.1);
+    --shadow-purple: 0 0 20px hsl(270 100% 60% / 0.3), 0 0 40px hsl(270 100% 60% / 0.1);
+    --shadow-card: 0 4px 20px hsl(240 10% 4% / 0.5);
+    
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    background: linear-gradient(135deg, hsl(240 10% 8%), hsl(270 40% 12%));
+    background-attachment: fixed;
+  }
+  
+  /* Cyber grid background effect */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+      linear-gradient(rgba(6, 182, 212, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(6, 182, 212, 0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+    pointer-events: none;
+    z-index: 0;
+  }
+}
+
+/* Neon glow animations */
+@keyframes neon-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 5px hsl(var(--neon-glow))) 
+            drop-shadow(0 0 10px hsl(var(--neon-glow)));
+  }
+  50% {
+    filter: drop-shadow(0 0 10px hsl(var(--neon-glow))) 
+            drop-shadow(0 0 20px hsl(var(--neon-glow)));
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-neon-pulse {
+  animation: neon-pulse 2s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
