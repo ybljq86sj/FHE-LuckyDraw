@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Lock, ShieldCheck, Loader2 } from 'lucide-react';
+import { Lock, ShieldCheck, Loader2, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,15 +23,44 @@ export const BuyTicket = () => {
     functionName: 'roundCount',
   });
 
-  // Get current round info (round 0 is the active one)
-  const currentRoundId = roundCount && Number(roundCount) > 0 ? Number(roundCount) - 1 : 0;
+  const hasRound = typeof roundCount === 'bigint' && roundCount > 0n;
+  const currentRoundId = hasRound ? Number(roundCount - 1n) : null;
+  const roundArgs = currentRoundId !== null ? [BigInt(currentRoundId)] as const : undefined;
 
   const { data: roundData } = useReadContract({
     address: CONTRACTS.FHELottery,
     abi: ABIS.FHELottery,
     functionName: 'getRound',
-    args: [BigInt(currentRoundId)],
+    args: roundArgs,
+    query: {
+      enabled: !!roundArgs,
+    },
   });
+
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  const roundDrawn = Boolean(roundData?.[3]);
+  const drawTime = roundData ? Number(roundData[2]) : null;
+  const isRoundLoading = currentRoundId !== null && roundData === undefined;
+  const roundClosed = drawTime !== null && drawTime !== 0 && drawTime <= nowSeconds;
+  const drawTimeLabel = drawTime ? new Date(drawTime * 1000).toLocaleString() : '';
+  const canPurchase =
+    isConnected &&
+    !buying &&
+    currentRoundId !== null &&
+    !roundDrawn &&
+    !roundClosed &&
+    !isRoundLoading;
+  const buttonLabel = !isConnected
+    ? 'Connect Wallet to Continue'
+    : currentRoundId === null
+      ? 'Awaiting Next Round'
+      : isRoundLoading
+        ? 'Loading round data...'
+        : roundDrawn
+          ? 'Round Already Drawn'
+          : roundClosed
+            ? 'Round Closed'
+            : 'Buy & Encrypt Ticket';
 
   // Initialize FHE SDK on mount
   useEffect(() => {
@@ -53,6 +82,34 @@ export const BuyTicket = () => {
   const handleBuyTicket = async () => {
     if (!isConnected || !address) {
       toast.error('Please connect your wallet first');
+      return;
+    }
+
+    if (currentRoundId === null) {
+      toast.error('No active round available', {
+        description: 'Please wait for the admin to create a new lottery round.',
+      });
+      return;
+    }
+
+    if (isRoundLoading) {
+      toast.error('Round data is still loading', {
+        description: 'Please wait a moment and try again.',
+      });
+      return;
+    }
+
+    if (roundDrawn) {
+      toast.error('This round has already been drawn', {
+        description: 'New tickets can only be purchased once the next round starts.',
+      });
+      return;
+    }
+
+    if (roundClosed) {
+      toast.error('Ticket sales for this round have closed', {
+        description: drawTimeLabel ? `Sales closed at ${drawTimeLabel}.` : undefined,
+      });
       return;
     }
 
@@ -97,12 +154,13 @@ export const BuyTicket = () => {
 
       toast.info('Submitting encrypted ticket to blockchain...');
 
+      const roundIdBigInt = BigInt(currentRoundId);
       // Buy ticket on-chain
       const hash = await writeContractAsync({
         address: CONTRACTS.FHELottery,
         abi: ABIS.FHELottery,
         functionName: 'buyTicket',
-        args: [BigInt(currentRoundId), encryptedNumber, proof],
+        args: [roundIdBigInt, encryptedNumber, proof],
       });
 
       toast.info('Waiting for confirmation...');
@@ -151,6 +209,41 @@ export const BuyTicket = () => {
               <label className="text-sm font-medium">
                 Choose 6 numbers (0-99)
               </label>
+
+              {!hasRound && (
+                <div className="flex items-start gap-3 rounded-lg border border-dashed border-border/50 bg-muted/40 p-4">
+                  <AlertCircle className="w-5 h-5 text-muted-foreground mt-0.5" />
+                  <div className="text-sm text-muted-foreground">
+                    <p className="font-medium text-foreground">No active round right now</p>
+                    <p>Tickets can be purchased after the administrator creates a new round.</p>
+                  </div>
+                </div>
+              )}
+
+              {hasRound && roundDrawn && (
+                <div className="flex items-start gap-3 rounded-lg border border-border/50 bg-muted/40 p-4">
+                  <AlertCircle className="w-5 h-5 text-muted-foreground mt-0.5" />
+                  <div className="text-sm text-muted-foreground">
+                    <p className="font-medium text-foreground">This round has already been drawn</p>
+                    <p>New tickets will be available once the next round is created.</p>
+                  </div>
+                </div>
+              )}
+
+              {hasRound && !roundDrawn && roundClosed && (
+                <div className="flex items-start gap-3 rounded-lg border border-border/50 bg-muted/40 p-4">
+                  <AlertCircle className="w-5 h-5 text-muted-foreground mt-0.5" />
+                  <div className="text-sm text-muted-foreground">
+                    <p className="font-medium text-foreground">Ticket sales are closed</p>
+                    <p>
+                      {drawTimeLabel
+                        ? `Sales closed at ${drawTimeLabel}.`
+                        : 'The draw time has passed, please wait for the next round.'}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
                 {numbers.map((num, index) => (
                   <div key={index} className="relative">
@@ -190,7 +283,7 @@ export const BuyTicket = () => {
             
             <Button
               onClick={handleBuyTicket}
-              disabled={!isConnected || buying}
+              disabled={!canPurchase}
               className="w-full h-14 text-lg font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
               style={{ boxShadow: 'var(--shadow-neon)' }}
             >
@@ -199,11 +292,7 @@ export const BuyTicket = () => {
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                   Encrypting & Buying...
                 </>
-              ) : isConnected ? (
-                'Buy & Encrypt Ticket'
-              ) : (
-                'Connect Wallet to Continue'
-              )}
+              ) : buttonLabel}
             </Button>
             
             <div className="flex items-start gap-3 p-4 bg-accent/10 rounded-lg border border-accent/30">

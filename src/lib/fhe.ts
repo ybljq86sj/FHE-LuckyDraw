@@ -1,4 +1,4 @@
-import { hexlify, getAddress } from "ethers";
+import { getAddress, toHex } from "viem";
 
 declare global {
   interface Window {
@@ -133,6 +133,13 @@ export async function initializeFHE(provider?: any): Promise<any> {
 /**
  * Encrypt a uint64 value
  */
+const toBytes32 = (bytes: Uint8Array): `0x${string}` => {
+  if (bytes.length !== 32) {
+    throw new Error(`FHE handle must be 32 bytes; received ${bytes.length}`);
+  }
+  return toHex(bytes);
+};
+
 export const encryptAmount = async (
   amount: bigint,
   contractAddress: string,
@@ -156,8 +163,8 @@ export const encryptAmount = async (
   console.log('[FHE] ✅ Encryption complete');
 
   return {
-    encryptedAmount: hexlify(handles[0]) as `0x${string}`,
-    proof: hexlify(inputProof) as `0x${string}`,
+    encryptedAmount: toBytes32(handles[0]),
+    proof: toHex(inputProof),
   };
 };
 
@@ -187,8 +194,8 @@ export const encryptNumber = async (
   console.log('[FHE] ✅ Encryption complete');
 
   return {
-    encryptedNumber: hexlify(handles[0]) as `0x${string}`,
-    proof: hexlify(inputProof) as `0x${string}`,
+    encryptedNumber: toBytes32(handles[0]),
+    proof: toHex(inputProof),
   };
 };
 
@@ -211,6 +218,13 @@ export const decryptAmount = async (
   console.log('[FHE] ✅ Decryption complete');
   return BigInt(decrypted);
 };
+
+export const __resetFHECacheForTests = () => {
+  fheInstance = null;
+  sdkPromise = null;
+};
+
+export const __toBytes32ForTests = toBytes32;
 
 /**
  * Decrypt a euint32 value (for lottery numbers)
