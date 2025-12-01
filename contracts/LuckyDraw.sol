@@ -2,11 +2,11 @@
 pragma solidity ^0.8.24;
 
 import { FHE, euint32, ebool, externalEuint32 } from "@fhevm/solidity/lib/FHE.sol";
-import { SepoliaConfig } from "@fhevm/solidity/config/ZamaConfig.sol";
+import { ZamaEthereumConfig } from "@fhevm/solidity/config/ZamaConfig.sol";
 
 /// @title FHE Lottery - Privacy-preserving lottery with encrypted ticket numbers
 /// @notice Ticket numbers remain encrypted until users claim prizes with proof
-contract FHELottery is SepoliaConfig {
+contract FHELottery is ZamaEthereumConfig {
     struct Ticket {
         address buyer;
         euint32 number; // Encrypted ticket number
