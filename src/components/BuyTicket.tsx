@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Lock, ShieldCheck, Loader2, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,14 @@ import { toast } from 'sonner';
 import { useAccount, useWriteContract, usePublicClient, useReadContract } from 'wagmi';
 import { CONTRACTS, ABIS } from '@/config/contracts';
 import { encryptNumber, initializeFHE } from '@/lib/fhe';
-import { useEffect } from 'react';
+import {
+  toastTxPending,
+  toastTxSuccess,
+  toastTxError,
+  toastUserRejected,
+  toastEncrypting,
+  dismissEncryptingToast,
+} from '@/lib/toast-utils';
 
 export const BuyTicket = () => {
   const [numbers, setNumbers] = useState(['', '', '', '', '', '']);
@@ -119,6 +126,7 @@ export const BuyTicket = () => {
     }
 
     setBuying(true);
+    let txHash: `0x${string}` | undefined;
 
     try {
       // Convert 6 numbers to a single uint32 using bit packing
@@ -137,7 +145,8 @@ export const BuyTicket = () => {
 
       console.log('[BuyTicket] Combined number:', combinedNumber, 'from', numbers);
 
-      toast.info('Encrypting your lottery numbers with FHE...');
+      // Show encrypting toast
+      toastEncrypting();
 
       // Encrypt the combined number
       const { encryptedNumber, proof } = await encryptNumber(
@@ -152,37 +161,43 @@ export const BuyTicket = () => {
         proofLength: proof.length
       });
 
-      toast.info('Submitting encrypted ticket to blockchain...');
+      // Dismiss encrypting toast
+      dismissEncryptingToast();
 
       const roundIdBigInt = BigInt(currentRoundId);
+
       // Buy ticket on-chain
-      const hash = await writeContractAsync({
+      txHash = await writeContractAsync({
         address: CONTRACTS.FHELottery,
         abi: ABIS.FHELottery,
         functionName: 'buyTicket',
         args: [roundIdBigInt, encryptedNumber, proof],
       });
 
-      toast.info('Waiting for confirmation...');
+      // Show pending toast with link
+      toastTxPending(txHash);
 
       const receipt = await publicClient!.waitForTransactionReceipt({
-        hash,
+        hash: txHash,
         confirmations: 1,
       });
 
       if (receipt.status === 'success') {
-        toast.success('🎉 Ticket purchased! Your numbers are encrypted on-chain.', {
-          description: `Round #${currentRoundId} | Tx: ${hash.slice(0, 10)}...`
-        });
+        toastTxSuccess(txHash, `Ticket purchased for Round #${currentRoundId}!`);
         setNumbers(['', '', '', '', '', '']);
       } else {
-        toast.error('Transaction failed');
+        toastTxError(txHash, 'Transaction reverted on chain');
       }
     } catch (error: any) {
       console.error('[BuyTicket] Error:', error);
-      toast.error('Failed to buy ticket', {
-        description: error.message || 'Unknown error'
-      });
+      dismissEncryptingToast();
+
+      // Check if user rejected the transaction
+      if (error.message?.includes('User rejected') || error.message?.includes('user rejected')) {
+        toastUserRejected();
+      } else {
+        toastTxError(txHash, error);
+      }
     } finally {
       setBuying(false);
     }
