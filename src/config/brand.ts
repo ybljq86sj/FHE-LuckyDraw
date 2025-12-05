@@ -1,1 +1,1 @@
-export const BRAND_NAME = 'LuckyDraw FHE';
+export const BRAND_NAME = "LuckyDraw FHE";
