@@ -1,4 +1,5 @@
-import hre from "hardhat";
+require("dotenv").config();
+const hre = require("hardhat");
 
 async function main() {
   const [deployer] = await hre.ethers.getSigners();
@@ -10,7 +11,7 @@ async function main() {
   await lottery.waitForDeployment();
   const address = await lottery.getAddress();
 
-  console.log("✅ FHELottery deployed to:", address);
+  console.log("FHELottery deployed to:", address);
   console.log("\nUpdate your frontend config with this address:");
   console.log(`export const CONTRACTS = {`);
   console.log(`  FHELottery: "${address}" as \`0x\${string}\`,`);

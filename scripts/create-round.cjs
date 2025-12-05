@@ -2,7 +2,7 @@ require('dotenv').config();
 const hre = require("hardhat");
 
 async function main() {
-  const CONTRACT_ADDRESS = process.env.LOTTERY_CONTRACT || "YOUR_CONTRACT_ADDRESS";
+  const CONTRACT_ADDRESS = process.env.LOTTERY_CONTRACT || "0x1A13d8b13f11ac34d2c606d1c47117Fa9974bdAe";
 
   const [admin] = await hre.ethers.getSigners();
   console.log("Creating round with admin:", admin.address);
