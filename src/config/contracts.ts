@@ -1,6 +1,6 @@
 // Contract addresses
 export const CONTRACTS = {
-  FHELottery: "0x1dEdc2d6A080809EFD0cb6b776f94905b12e6F11" as `0x${string}`,
+  FHELottery: "0x1A13d8b13f11ac34d2c606d1c47117Fa9974bdAe" as `0x${string}`,
 } as const;
 
 // Contract ABIs
