@@ -2,8 +2,8 @@
 
 A privacy-preserving decentralized lottery platform built with Fully Homomorphic Encryption (FHE) technology using Zama's fhEVM.
 
-[![Live Demo](https://img.shields.io/badge/demo-live-success)](https://fhe-luckydraw.vercel.app)
-[![Sepolia](https://img.shields.io/badge/network-Sepolia-blue)](https://sepolia.etherscan.io/address/0x1dEdc2d6A080809EFD0cb6b776f94905b12e6F11)
+[![Live Demo](https://img.shields.io/badge/demo-live-success)](https://luckydraw-fhe.vercel.app)
+[![Sepolia](https://img.shields.io/badge/network-Sepolia-blue)](https://sepolia.etherscan.io/address/0x1A13d8b13f11ac34d2c606d1c47117Fa9974bdAe)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 ## 📖 Table of Contents
@@ -33,8 +33,8 @@ FHE Lucky Draw revolutionizes traditional lottery systems by leveraging **Fully 
 
 ### Live Demo
 
-- **Website**: [https://fhe-luckydraw.vercel.app](https://fhe-luckydraw.vercel.app)
-- **Contract**: [0x1dEdc2d6A080809EFD0cb6b776f94905b12e6F11](https://sepolia.etherscan.io/address/0x1dEdc2d6A080809EFD0cb6b776f94905b12e6F11)
+- **Website**: [https://luckydraw-fhe.vercel.app](https://luckydraw-fhe.vercel.app)
+- **Contract**: [0x1A13d8b13f11ac34d2c606d1c47117Fa9974bdAe](https://sepolia.etherscan.io/address/0x1A13d8b13f11ac34d2c606d1c47117Fa9974bdAe)
 - **Network**: Ethereum Sepolia Testnet
 
 ## 🤔 Why FHE Lucky Draw?
@@ -83,7 +83,7 @@ Data → [Encrypt] → Ciphertext → [Compute on Encrypted] → Encrypted Resul
 
 The `FHELottery` smart contract is the core of the system, handling all lottery operations with FHE encryption.
 
-**Contract Address**: `0x1dEdc2d6A080809EFD0cb6b776f94905b12e6F11`
+**Contract Address**: `0x1A13d8b13f11ac34d2c606d1c47117Fa9974bdAe`
 
 ### Data Structures
 
@@ -161,8 +161,9 @@ function getTicketInfo(uint256 roundId, uint256 ticketId) external view returns 
 The contract uses Zama's FHE library for encrypted operations:
 
 ```solidity
-// Import FHE library
+// Import FHE library (fhEVM v0.9.1)
 import { FHE, euint32, ebool, externalEuint32 } from "@fhevm/solidity/lib/FHE.sol";
+import { ZamaEthereumConfig } from "@fhevm/solidity/config/ZamaConfig.sol";
 
 // Convert external encrypted input to internal
 euint32 cipherNumber = FHE.fromExternal(encryptedNumber, proof);
@@ -215,7 +216,7 @@ ebool isWinner = FHE.eq(ticket.number, winningCipher);
 │                 Smart Contract Layer                 │
 ├─────────────────────────────────────────────────────┤
 │  FHELottery Contract (Sepolia)                      │
-│  - Zama fhEVM v0.8.0                                │
+│  - Zama fhEVM v0.9.1                                │
 │  - Encrypted data storage                           │
 │  - FHE operations on-chain                          │
 └─────────────────────────────────────────────────────┘
@@ -230,8 +231,8 @@ ebool isWinner = FHE.eq(ticket.number, winningCipher);
 | **Styling** | Tailwind CSS + shadcn/ui | Modern, responsive design |
 | **Web3** | Wagmi v2 + Viem | Ethereum interactions |
 | **Wallet** | RainbowKit | Multi-wallet support |
-| **FHE** | Zama Relayer SDK | Client-side encryption |
-| **Smart Contract** | Solidity + fhEVM | On-chain logic with FHE |
+| **FHE** | Zama Relayer SDK 0.3.0-5 | Client-side encryption |
+| **Smart Contract** | Solidity + fhEVM 0.9.1 | On-chain logic with FHE |
 | **Network** | Ethereum Sepolia | Testnet deployment |
 
 ## 🚀 Getting Started
@@ -336,41 +337,82 @@ export PRIVATE_KEY="your-private-key"
 3. **Compile contracts**
 
 ```bash
-npx hardhat compile
+npm run compile
 ```
 
 4. **Deploy to Sepolia**
 
 ```bash
-npx hardhat run scripts/deploy.js --network sepolia
+npm run deploy:sepolia
 ```
 
 5. **Create initial rounds**
 
 ```bash
-npx hardhat run scripts/create-round.js --network sepolia
+npx hardhat run scripts/create-round.cjs --network sepolia --config hardhat.config.cjs
 ```
 
 ## 🧪 Testing
 
-### Unit Tests
+### Smart Contract Unit Tests
 
-Run unit tests with:
+The project includes comprehensive FHE smart contract tests using Hardhat and the FHEVM mock environment.
+
+#### Run All Contract Tests
+
+```bash
+npm run test:contracts
+```
+
+#### Run Basic Functionality Tests
+
+```bash
+npm run test:contracts:basic
+```
+
+Tests include:
+- Contract deployment and initialization
+- Round creation (admin permissions, time validation)
+- Ticket purchase with encrypted numbers
+- Multi-user and multi-ticket scenarios
+- Drawing winning numbers (time control, double-draw prevention)
+- Prize claiming (verification, double-claim prevention)
+- Access control for encrypted ticket numbers
+
+#### Run Advanced FHE Operations Tests
+
+```bash
+npm run test:contracts:advanced
+```
+
+Tests include:
+- `FHE.fromExternal()` - Encrypted input conversion
+- `FHE.eq()` - Encrypted comparison for winner verification
+- `FHE.asEuint32()` - Plaintext to ciphertext conversion
+- `FHE.allow()` - User access permissions
+- `FHE.allowThis()` - Contract self-access permissions
+- Invalid proof handling
+- Edge cases (zero values, max uint32 values)
+- Multiple rounds with FHE operations
+- Performance testing (rapid sequential operations)
+- Complete lottery flow verification
+- Event emission testing
+
+### Frontend Unit Tests
+
+Run frontend unit tests with:
 
 ```bash
 npm run test
-# or
-yarn test
 ```
 
-### Test Coverage
+### Test File Structure
 
-The project includes tests for:
-
-- FHE encryption/decryption functions
-- Smart contract interactions
-- React component rendering
-- Utility functions
+```
+test/
+├── FHELottery.test.js          # Basic functionality tests (22 test cases)
+└── FHELottery.advanced.test.js # Advanced FHE operations tests (12 test cases)
+```
 
 ### Manual Testing
 
@@ -451,8 +493,11 @@ LuckyDraw/
 ├── contracts/                  # Smart contracts
 │   └── LuckyDraw.sol          # Main FHE lottery contract
 ├── scripts/                    # Deployment scripts
-│   ├── deploy.js
-│   └── create-round.js
+│   ├── deploy.cjs             # Contract deployment script
+│   └── create-round.cjs       # Round creation script
+├── test/                       # Unit tests
+│   ├── FHELottery.test.js     # Basic functionality tests
+│   └── FHELottery.advanced.test.js # Advanced FHE tests
 ├── src/
 │   ├── components/            # React components
 │   │   ├── Header.tsx        # Navigation header
@@ -481,6 +526,7 @@ LuckyDraw/
 ├── package.json              # Dependencies
 ├── tsconfig.json             # TypeScript config
 ├── vite.config.ts            # Vite configuration
+├── hardhat.config.cjs        # Hardhat configuration
 └── README.md                 # This file
 ```
 
@@ -515,7 +561,7 @@ Contract configuration and ABIs:
 
 ```typescript
 export const CONTRACTS = {
-  FHELottery: "0x1dEdc2d6A080809EFD0cb6b776f94905b12e6F11" as `0x${string}`,
+  FHELottery: "0x1A13d8b13f11ac34d2c606d1c47117Fa9974bdAe" as `0x${string}`,
 };
 
 export const ABIS = {
